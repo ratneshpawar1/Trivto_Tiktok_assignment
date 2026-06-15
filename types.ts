@@ -20,3 +20,9 @@ export interface FeedResponse {
 export interface LikesResponse {
   likedIds: string[];
 }
+
+// POST /api/likes/[id] response — the new state after toggling.
+export interface LikeToggleResponse {
+  id: string;
+  liked: boolean;
+}
