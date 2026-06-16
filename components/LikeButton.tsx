@@ -14,7 +14,11 @@ export function LikeButton({ liked, onToggle }: Props) {
       className={styles.button}
       aria-pressed={liked}
       aria-label={liked ? "Unlike photo" : "Like photo"}
-      onClick={onToggle}
+      onClick={(e) => {
+        // Don't let a button tap count toward the slide's double-tap detector.
+        e.stopPropagation();
+        onToggle();
+      }}
     >
       <svg
         className={styles.icon}

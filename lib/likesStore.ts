@@ -58,6 +58,28 @@ export function createSqliteLikesStore(dbPath: string): LikesStore {
   };
 }
 
+/**
+ * In-memory fallback store. Used when the filesystem isn't writable (e.g. some
+ * serverless platforms). Likes work for the life of the process but don't
+ * persist across instances/restarts — surfaced loudly via a warning + README.
+ */
+export function createMemoryLikesStore(): LikesStore {
+  const set = new Set<string>();
+  return {
+    getAll: () => [...set].sort(),
+    has: (id) => set.has(id),
+    toggle: (id) => {
+      if (set.has(id)) {
+        set.delete(id);
+        return false;
+      }
+      set.add(id);
+      return true;
+    },
+    close() {},
+  };
+}
+
 function resolveDbPath(): string {
   return (
     process.env.LIKES_DB_PATH || path.join(process.cwd(), "data", "likes.db")
@@ -68,6 +90,19 @@ function resolveDbPath(): string {
 let singleton: LikesStore | null = null;
 
 export function likesStore(): LikesStore {
-  if (!singleton) singleton = createSqliteLikesStore(resolveDbPath());
+  if (singleton) return singleton;
+  try {
+    singleton = createSqliteLikesStore(resolveDbPath());
+  } catch (err) {
+    // Read-only / ephemeral filesystem (common on serverless). Degrade to an
+    // in-memory store so the app keeps working instead of 500-ing. For durable
+    // global likes on serverless, set LIKES_DB_PATH to a persistent volume or
+    // swap this adapter for KV/Postgres (see README).
+    console.warn(
+      "[likes] SQLite unavailable; using in-memory store (likes won't persist):",
+      err instanceof Error ? err.message : err,
+    );
+    singleton = createMemoryLikesStore();
+  }
   return singleton;
 }

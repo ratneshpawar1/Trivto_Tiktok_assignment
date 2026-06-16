@@ -2,7 +2,10 @@ import { describe, it, expect, afterEach } from "vitest";
 import os from "node:os";
 import path from "node:path";
 import fs from "node:fs";
-import { createSqliteLikesStore } from "../lib/likesStore";
+import {
+  createSqliteLikesStore,
+  createMemoryLikesStore,
+} from "../lib/likesStore";
 
 describe("likesStore (in-memory)", () => {
   it("toggles add -> remove and is idempotent in pairs", () => {
@@ -40,6 +43,17 @@ describe("likesStore (in-memory)", () => {
     } finally {
       store.close();
     }
+  });
+});
+
+describe("createMemoryLikesStore (serverless fallback)", () => {
+  it("toggles add -> remove like the SQLite store", () => {
+    const store = createMemoryLikesStore();
+    expect(store.toggle("a")).toBe(true);
+    expect(store.has("a")).toBe(true);
+    expect(store.getAll()).toEqual(["a"]);
+    expect(store.toggle("a")).toBe(false);
+    expect(store.getAll()).toEqual([]);
   });
 });
 

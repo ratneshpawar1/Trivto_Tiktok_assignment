@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FeedSlide } from "../components/FeedSlide";
@@ -43,5 +43,41 @@ describe("FeedSlide", () => {
     expect(screen.queryByText("Couldn't load image")).not.toBeInTheDocument();
     const retried = screen.getByAltText("a tower at dusk");
     expect(retried.getAttribute("src")).toContain("retry=1");
+  });
+
+  it("toggles the like on a double-tap (and ignores a single tap)", () => {
+    const onToggle = vi.fn();
+    render(<FeedSlide image={image} liked={false} onToggleLike={onToggle} />);
+    const slide = screen.getByTestId("feed-slide");
+
+    fireEvent.click(slide);
+    expect(onToggle).not.toHaveBeenCalled(); // single tap does nothing
+
+    fireEvent.click(slide); // second tap within the double-tap window
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a heart burst on a double-tap like", () => {
+    render(<FeedSlide image={image} liked={false} onToggleLike={() => {}} />);
+    const slide = screen.getByTestId("feed-slide");
+    const before = slide.querySelectorAll("svg").length;
+
+    fireEvent.click(slide);
+    fireEvent.click(slide);
+
+    expect(slide.querySelectorAll("svg").length).toBe(before + 1);
+  });
+
+  it("does not let a like-button tap trigger the slide double-tap", () => {
+    const onToggle = vi.fn();
+    render(<FeedSlide image={image} liked={false} onToggleLike={onToggle} />);
+    const btn = screen.getByRole("button", { name: "Like photo" });
+
+    fireEvent.click(btn);
+    fireEvent.click(btn);
+
+    // Two button clicks => exactly two toggles. If propagation weren't stopped,
+    // the slide handler would also fire a double-tap toggle (a 3rd call).
+    expect(onToggle).toHaveBeenCalledTimes(2);
   });
 });

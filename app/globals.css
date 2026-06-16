@@ -4,6 +4,10 @@
   --muted: #9aa0a6;
   --accent: #ff2d55;
   --slide-height: 100dvh; /* dvh, not vh — accounts for mobile browser chrome */
+  /* Cap the image column so it doesn't stretch edge-to-edge on wide desktop
+     screens (looks like a phone-width feed, letterboxed by a blurred backdrop).
+     On phones this is wider than the viewport, so the feed stays full-bleed. */
+  --feed-max-width: 480px;
 }
 
 *,

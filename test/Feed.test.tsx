@@ -80,6 +80,7 @@ function routeFetch(opts: RouteOpts) {
 
 beforeEach(() => {
   ioCallbacks = [];
+  window.sessionStorage.clear();
 });
 afterEach(() => {
   vi.restoreAllMocks();
@@ -224,5 +225,54 @@ describe("Feed", () => {
     expect(scrollTo).toHaveBeenCalledWith(
       expect.objectContaining({ top: 800 }),
     );
+  });
+
+  it("restores the saved image index after a refresh", async () => {
+    window.sessionStorage.setItem("feed:index", "3");
+
+    // jsdom reports 0 for layout metrics; emulate a real viewport + capture
+    // the scrollTop the restore logic assigns.
+    let captured = 0;
+    const ch = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      "clientHeight",
+    );
+    const st = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      "scrollTop",
+    );
+    Object.defineProperty(HTMLElement.prototype, "clientHeight", {
+      configurable: true,
+      get: () => 800,
+    });
+    Object.defineProperty(HTMLElement.prototype, "scrollTop", {
+      configurable: true,
+      get: () => captured,
+      set: (v: number) => {
+        captured = v;
+      },
+    });
+
+    try {
+      vi.stubGlobal(
+        "fetch",
+        routeFetch({
+          feed: () =>
+            feedRes(
+              ["0", "1", "2", "3", "4"].map((id) => img(id)),
+              null,
+            ),
+        }),
+      );
+      render(<Feed />);
+
+      // index 3 * 800px viewport
+      await waitFor(() => expect(captured).toBe(2400));
+    } finally {
+      if (ch) Object.defineProperty(HTMLElement.prototype, "clientHeight", ch);
+      else delete (HTMLElement.prototype as { clientHeight?: number }).clientHeight;
+      if (st) Object.defineProperty(HTMLElement.prototype, "scrollTop", st);
+      else delete (HTMLElement.prototype as { scrollTop?: number }).scrollTop;
+    }
   });
 });
