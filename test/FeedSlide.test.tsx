@@ -57,7 +57,7 @@ describe("FeedSlide", () => {
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
 
-  it("shows a heart burst on a double-tap like", () => {
+  it("shows a heart burst on a double-tap like (transient, keyed for unmount)", () => {
     render(<FeedSlide image={image} liked={false} onToggleLike={() => {}} />);
     const slide = screen.getByTestId("feed-slide");
     const before = slide.querySelectorAll("svg").length;
@@ -65,7 +65,20 @@ describe("FeedSlide", () => {
     fireEvent.click(slide);
     fireEvent.click(slide);
 
+    // Burst element appears; it carries onAnimationEnd to unmount itself so it
+    // can't replay when the slide is re-shown (the Liked-tab -> Feed bug). The
+    // animationend reset itself is verified live (jsdom can't drive it).
+    const burst = slide.querySelector('div[aria-hidden="true"][class*="burst"]');
+    expect(burst).not.toBeNull();
     expect(slide.querySelectorAll("svg").length).toBe(before + 1);
+  });
+
+  it("does not render a burst on first paint (so re-show can't replay one)", () => {
+    render(<FeedSlide image={image} liked={true} onToggleLike={() => {}} />);
+    const slide = screen.getByTestId("feed-slide");
+    expect(
+      slide.querySelector('div[aria-hidden="true"][class*="burst"]'),
+    ).toBeNull();
   });
 
   it("does not let a like-button tap trigger the slide double-tap", () => {

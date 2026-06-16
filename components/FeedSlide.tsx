@@ -9,6 +9,8 @@ interface Props {
   image: FeedImage;
   liked: boolean;
   onToggleLike: () => void;
+  /** When true, play a fade/scale-out exit (used by the Liked view on un-like). */
+  exiting?: boolean;
 }
 
 type Status = "loading" | "loaded" | "error";
@@ -114,7 +116,15 @@ export function FeedSlide({ image, liked, onToggleLike }: Props) {
         </div>
 
         {burst > 0 && (
-          <div key={burst} className={styles.burst} aria-hidden="true">
+          <div
+            key={burst}
+            className={styles.burst}
+            aria-hidden="true"
+            // Unmount once the animation finishes so it can't replay when the
+            // slide is re-shown (e.g. switching back from the Liked tab, which
+            // toggles display and would otherwise restart the CSS animation).
+            onAnimationEnd={() => setBurst(0)}
+          >
             <svg
               className={styles.burstIcon}
               viewBox="0 0 24 24"

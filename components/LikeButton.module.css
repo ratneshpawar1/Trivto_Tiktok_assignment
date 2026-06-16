@@ -30,6 +30,11 @@
 
 .button[aria-pressed="true"] .icon {
   transform: scale(1.1);
+}
+
+/* Applied transiently on a click-to-like only, then removed on animationend —
+   so it never replays when a liked button is re-shown (Liked tab -> Feed). */
+.icon.pop {
   animation: pop 0.28s ease;
 }
 
@@ -50,7 +55,7 @@
   .icon {
     transition: none;
   }
-  .button[aria-pressed="true"] .icon {
+  .icon.pop {
     animation: none;
   }
 }

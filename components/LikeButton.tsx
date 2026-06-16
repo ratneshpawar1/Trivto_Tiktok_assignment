@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import styles from "./LikeButton.module.css";
 
 interface Props {
@@ -8,6 +9,11 @@ interface Props {
 }
 
 export function LikeButton({ liked, onToggle }: Props) {
+  // Transient: the pop only plays on an actual like, never on render/re-show.
+  // (A CSS animation bound to [aria-pressed="true"] would replay every time the
+  // feed is re-shown after the Liked tab, since display:none→block restarts it.)
+  const [popping, setPopping] = useState(false);
+
   return (
     <button
       type="button"
@@ -17,11 +23,13 @@ export function LikeButton({ liked, onToggle }: Props) {
       onClick={(e) => {
         // Don't let a button tap count toward the slide's double-tap detector.
         e.stopPropagation();
+        if (!liked) setPopping(true); // pop when becoming liked
         onToggle();
       }}
     >
       <svg
-        className={styles.icon}
+        className={`${styles.icon} ${popping ? styles.pop : ""}`}
+        onAnimationEnd={() => setPopping(false)}
         viewBox="0 0 24 24"
         aria-hidden="true"
         fill={liked ? "currentColor" : "none"}
