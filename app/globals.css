@@ -26,13 +26,10 @@ body {
     Roboto,
     sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* Full-bleed snap feed: images go edge-to-edge; overlay controls handle
+     their own safe-area insets via env(safe-area-inset-*). */
   overscroll-behavior-y: none;
-}
-
-body {
-  /* Respect notches / safe areas (viewport-fit=cover). */
-  padding: env(safe-area-inset-top) env(safe-area-inset-right)
-    env(safe-area-inset-bottom) env(safe-area-inset-left);
+  overflow: hidden;
 }
 
 button {

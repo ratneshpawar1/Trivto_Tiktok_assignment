@@ -1,0 +1,56 @@
+.button {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  transition:
+    transform 0.12s ease,
+    background 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.button:active {
+  transform: scale(0.86);
+}
+
+.button[aria-pressed="true"] {
+  color: var(--accent);
+}
+
+.icon {
+  width: 30px;
+  height: 30px;
+  transition: transform 0.15s ease;
+}
+
+.button[aria-pressed="true"] .icon {
+  transform: scale(1.1);
+  animation: pop 0.28s ease;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.7);
+  }
+  60% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1.1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .icon {
+    transition: none;
+  }
+  .button[aria-pressed="true"] .icon {
+    animation: none;
+  }
+}

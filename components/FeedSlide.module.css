@@ -1,0 +1,78 @@
+.slide {
+  position: relative;
+  width: 100%;
+  height: var(--slide-height);
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  overflow: hidden;
+  background: #111;
+}
+
+/* Blurred thumbnail shown until the full image decodes — prevents an empty
+   frame and softens the load-in. */
+.placeholder {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(18px);
+  transform: scale(1.1); /* hide blurred edges */
+  transition: opacity 0.4s ease;
+}
+
+.image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.image.loaded {
+  opacity: 1;
+}
+
+/* Gradient so white attribution/controls stay legible over any image. */
+.scrim {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 40%;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent);
+  pointer-events: none;
+}
+
+.controls {
+  position: absolute;
+  right: calc(16px + env(safe-area-inset-right));
+  bottom: calc(28px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+
+.attribution {
+  position: absolute;
+  left: calc(16px + env(safe-area-inset-left));
+  bottom: calc(34px + env(safe-area-inset-bottom));
+  right: 88px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+.attribution span {
+  display: block;
+  font-weight: 400;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}

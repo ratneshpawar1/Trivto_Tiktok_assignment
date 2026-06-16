@@ -1,0 +1,45 @@
+.feed {
+  height: var(--slide-height);
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+}
+
+.feed::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
+
+/* Short, non-snapping footer that doubles as the infinite-scroll sentinel. */
+.footer {
+  min-height: 90px;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.moreSpinner {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--fg);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .moreSpinner {
+    animation-duration: 2s;
+  }
+}
