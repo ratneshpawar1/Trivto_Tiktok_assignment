@@ -21,6 +21,11 @@ export interface LikesResponse {
   likedIds: string[];
 }
 
+// GET /api/likes?full=1 — ids plus the stored image data for the "Liked" view.
+export interface LikesFullResponse extends LikesResponse {
+  items: FeedImage[];
+}
+
 // POST /api/likes/[id] response — the new state after toggling.
 export interface LikeToggleResponse {
   id: string;

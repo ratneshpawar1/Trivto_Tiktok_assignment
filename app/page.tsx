@@ -1,5 +1,5 @@
-import { Feed } from "@/components/Feed";
+import { FeedScreen } from "@/components/FeedScreen";
 
 export default function Home() {
-  return <Feed />;
+  return <FeedScreen />;
 }

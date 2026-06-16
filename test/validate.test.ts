@@ -1,6 +1,21 @@
 import { describe, it, expect } from "vitest";
-import { parsePage, validateLikeId, MAX_PAGE } from "../lib/validate";
+import {
+  parsePage,
+  validateLikeId,
+  validateFeedImage,
+  MAX_PAGE,
+} from "../lib/validate";
 import { AppError } from "../lib/errors";
+
+const validImage = {
+  id: "5",
+  width: 1080,
+  height: 1920,
+  srcUrl: "https://images.pexels.com/photos/5/p.jpg?auto=compress",
+  thumbUrl: "https://images.pexels.com/photos/5/t.jpg",
+  author: "Ada",
+  alt: "a tower",
+};
 
 describe("parsePage", () => {
   it("defaults missing/empty to 1", () => {
@@ -69,5 +84,40 @@ describe("validateLikeId", () => {
   it("rejects non-string input", () => {
     // @ts-expect-error testing runtime guard
     expect(() => validateLikeId(123)).toThrowError(AppError);
+  });
+});
+
+describe("validateFeedImage", () => {
+  it("accepts a well-formed image on an allowed host", () => {
+    const out = validateFeedImage("5", validImage);
+    expect(out).toMatchObject({ id: "5", author: "Ada", alt: "a tower" });
+    expect(out.srcUrl).toBe(validImage.srcUrl);
+  });
+
+  it("rejects an id that doesn't match the route param", () => {
+    expect(() => validateFeedImage("9", validImage)).toThrowError(AppError);
+  });
+
+  it.each([
+    ["http (not https)", { ...validImage, srcUrl: "http://images.pexels.com/x.jpg" }],
+    ["disallowed host", { ...validImage, srcUrl: "https://evil.example.com/x.jpg" }],
+    ["missing srcUrl", { ...validImage, srcUrl: undefined }],
+    ["bad thumb host", { ...validImage, thumbUrl: "https://tracker.com/t.gif" }],
+  ])("rejects %s", (_label, bad) => {
+    expect(() => validateFeedImage("5", bad)).toThrowError(AppError);
+  });
+
+  it("rejects a non-object", () => {
+    expect(() => validateFeedImage("5", null)).toThrowError(AppError);
+    expect(() => validateFeedImage("5", "nope")).toThrowError(AppError);
+  });
+
+  it("falls back author/alt and clamps absurd dimensions", () => {
+    expect(() => validateFeedImage("5", { ...validImage, width: 9e9 })).toThrowError(
+      AppError,
+    );
+    const out = validateFeedImage("5", { ...validImage, author: "", alt: "  " });
+    expect(out.author).toBe("Unknown");
+    expect(out.alt).toBe("photo");
   });
 });

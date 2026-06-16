@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useFeed } from "@/hooks/useFeed";
-import { useLikes } from "@/hooks/useLikes";
+import type { UseLikes } from "@/hooks/useLikes";
+import { useArrowKeyNav } from "@/hooks/useArrowKeyNav";
 import { FeedSlide } from "./FeedSlide";
 import { Loading } from "./states/Loading";
 import { Empty } from "./states/Empty";
@@ -23,10 +24,17 @@ function readSavedIndex(): number {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
-export function Feed() {
+export function Feed({
+  likes,
+  active = true,
+}: {
+  likes: UseLikes;
+  /** False when another view is on top — disables this view's key nav. */
+  active?: boolean;
+}) {
   const { items, isLoadingInitial, isLoadingMore, error, hasMore, loadMore, retry } =
     useFeed();
-  const { isLiked, toggle } = useLikes();
+  const { isLiked, toggle } = likes;
 
   const containerRef = useRef<HTMLUListElement | null>(null);
   const sentinelRef = useRef<HTMLLIElement | null>(null);
@@ -57,29 +65,7 @@ export function Feed() {
   }, [loadMore]);
 
   // Arrow-key navigation for desktop review: snap to the next/previous slide.
-  useEffect(() => {
-    const root = containerRef.current;
-    if (!root) return;
-
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
-      e.preventDefault();
-      const slideHeight = root.clientHeight || 1;
-      const current = Math.round(root.scrollTop / slideHeight);
-      const dir = e.key === "ArrowDown" ? 1 : -1;
-      const target = Math.max(0, Math.min(current + dir, items.length - 1));
-      const reduceMotion = window.matchMedia?.(
-        "(prefers-reduced-motion: reduce)",
-      ).matches;
-      root.scrollTo({
-        top: target * slideHeight,
-        behavior: reduceMotion ? "auto" : "smooth",
-      });
-    };
-
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [items.length]);
+  useArrowKeyNav(containerRef, items.length, active);
 
   // Restore the saved image index, loading more pages if the user was deep.
   useEffect(() => {
@@ -149,7 +135,7 @@ export function Feed() {
             key={image.id}
             image={image}
             liked={isLiked(image.id)}
-            onToggleLike={() => toggle(image.id)}
+            onToggleLike={() => toggle(image.id, image)}
           />
         ))}
 

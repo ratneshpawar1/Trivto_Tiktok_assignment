@@ -1,12 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { LikesResponse, LikeToggleResponse } from "@/types";
+import type {
+  FeedImage,
+  LikesResponse,
+  LikesFullResponse,
+  LikeToggleResponse,
+} from "@/types";
 
 export interface UseLikes {
   isLiked: (id: string) => boolean;
-  /** Optimistically toggle, then persist; rolls back if the request fails. */
-  toggle: (id: string) => void;
+  likedCount: number;
+  /** Optimistically toggle, then persist; rolls back if the request fails.
+   *  Pass the image when liking so it can appear in the Liked view. */
+  toggle: (id: string, image?: FeedImage) => void;
+  /** Load the full liked images (for the Liked view) and sync membership. */
+  fetchLikedImages: () => Promise<FeedImage[]>;
 }
 
 export function useLikes(): UseLikes {
@@ -32,7 +41,7 @@ export function useLikes(): UseLikes {
 
   const isLiked = useCallback((id: string) => likedIds.has(id), [likedIds]);
 
-  const toggle = useCallback((id: string) => {
+  const toggle = useCallback((id: string, image?: FeedImage) => {
     const setLiked = (liked: boolean) =>
       setLikedIds((prev) => {
         const next = new Set(prev);
@@ -52,16 +61,27 @@ export function useLikes(): UseLikes {
 
     (async () => {
       try {
-        const res = await fetch(`/api/likes/${id}`, { method: "POST" });
+        const res = await fetch(`/api/likes/${id}`, {
+          method: "POST",
+          headers: image ? { "content-type": "application/json" } : undefined,
+          body: image ? JSON.stringify({ image }) : undefined,
+        });
         if (!res.ok) throw new Error("toggle failed");
-        // Reconcile to the server's reported truth.
         const data: LikeToggleResponse = await res.json();
-        setLiked(data.liked);
+        setLiked(data.liked); // reconcile to server truth
       } catch {
         setLiked(wasLiked); // roll back to pre-click state
       }
     })();
   }, []);
 
-  return { isLiked, toggle };
+  const fetchLikedImages = useCallback(async (): Promise<FeedImage[]> => {
+    const res = await fetch("/api/likes?full=1");
+    if (!res.ok) throw new Error("failed to load liked images");
+    const data: LikesFullResponse = await res.json();
+    setLikedIds(new Set(data.likedIds)); // keep membership in sync
+    return data.items;
+  }, []);
+
+  return { isLiked, likedCount: likedIds.size, toggle, fetchLikedImages };
 }

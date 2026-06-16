@@ -3,7 +3,19 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Feed } from "../components/Feed";
+import type { UseLikes } from "../hooks/useLikes";
 import type { FeedImage } from "../types";
+
+// Feed takes likes as a prop now; these tests don't exercise like state, so a
+// stub is enough. The like-toggle UI is covered in FeedScreen.test.tsx.
+function stubLikes(): UseLikes {
+  return {
+    isLiked: () => false,
+    likedCount: 0,
+    toggle: vi.fn(),
+    fetchLikedImages: vi.fn().mockResolvedValue([]),
+  };
+}
 
 function img(id: string): FeedImage {
   return {
@@ -90,7 +102,7 @@ afterEach(() => {
 describe("Feed", () => {
   it("shows the initial loading state while the first page loads", () => {
     vi.stubGlobal("fetch", routeFetch({ feedPending: true }));
-    render(<Feed />);
+    render(<Feed likes={stubLikes()} />);
     expect(screen.getByText("Loading photos…")).toBeInTheDocument();
   });
 
@@ -99,7 +111,7 @@ describe("Feed", () => {
       "fetch",
       routeFetch({ feed: () => feedRes([img("1"), img("2")], null) }),
     );
-    render(<Feed />);
+    render(<Feed likes={stubLikes()} />);
 
     await waitFor(() =>
       expect(screen.getAllByTestId("feed-slide")).toHaveLength(2),
@@ -110,7 +122,7 @@ describe("Feed", () => {
 
   it("shows the empty state when the feed returns no images", async () => {
     vi.stubGlobal("fetch", routeFetch({ feed: () => feedRes([], null) }));
-    render(<Feed />);
+    render(<Feed likes={stubLikes()} />);
     await waitFor(() =>
       expect(screen.getByText("No photos yet")).toBeInTheDocument(),
     );
@@ -127,7 +139,7 @@ describe("Feed", () => {
         feed: (_p, call) => (call === 0 ? err503() : feedRes([img("1")], null)),
       }),
     );
-    render(<Feed />);
+    render(<Feed likes={stubLikes()} />);
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("Too many requests");
@@ -144,32 +156,10 @@ describe("Feed", () => {
       "fetch",
       routeFetch({ feed: () => new Response("boom", { status: 502 }) }),
     );
-    render(<Feed />);
+    render(<Feed likes={stubLikes()} />);
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("Something went wrong");
     expect(alert).toHaveAttribute("data-error-kind", "generic");
-  });
-
-  it("toggles a like from the UI", async () => {
-    vi.stubGlobal(
-      "fetch",
-      routeFetch({
-        feed: () => feedRes([img("1")], null),
-        likes: [],
-        toggle: (id) => jsonOk({ id, liked: true }),
-      }),
-    );
-    render(<Feed />);
-
-    const likeBtn = await screen.findByRole("button", { name: "Like photo" });
-    expect(likeBtn).toHaveAttribute("aria-pressed", "false");
-
-    await userEvent.click(likeBtn);
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: "Unlike photo" }),
-      ).toHaveAttribute("aria-pressed", "true"),
-    );
   });
 
   it("loads the next page when the sentinel intersects (before the bottom)", async () => {
@@ -178,7 +168,7 @@ describe("Feed", () => {
         page === 1 ? feedRes([img("1")], 2) : feedRes([img("2")], null),
     });
     vi.stubGlobal("fetch", fetchMock);
-    render(<Feed />);
+    render(<Feed likes={stubLikes()} />);
 
     await waitFor(() =>
       expect(screen.getAllByTestId("feed-slide")).toHaveLength(1),
@@ -201,7 +191,7 @@ describe("Feed", () => {
         feed: () => feedRes([img("1"), img("2"), img("3")], null),
       }),
     );
-    render(<Feed />);
+    render(<Feed likes={stubLikes()} />);
     await waitFor(() =>
       expect(screen.getAllByTestId("feed-slide")).toHaveLength(3),
     );
@@ -264,7 +254,7 @@ describe("Feed", () => {
             ),
         }),
       );
-      render(<Feed />);
+      render(<Feed likes={stubLikes()} />);
 
       // index 3 * 800px viewport
       await waitFor(() => expect(captured).toBe(2400));

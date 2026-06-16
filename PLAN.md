@@ -2,7 +2,7 @@
 
 > **Audience:** This file is written for Claude Code to execute, phase by phase.
 > **Working agreement:** Build in order. Do not start a phase until the previous phase's
-> *Acceptance criteria* pass. Stop at every 🙋 **HUMAN ACTION** marker and wait — do not
+> *Acceptance criteria* pass. Stop at every **HUMAN ACTION** marker and wait — do not
 > fabricate API keys, do not push to a remote, do not invent credentials.
 
 ---
