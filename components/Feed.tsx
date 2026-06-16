@@ -34,6 +34,31 @@ export function Feed() {
     return () => observer.disconnect();
   }, [loadMore]);
 
+  // Arrow-key navigation for desktop review: snap to the next/previous slide.
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root) return;
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      e.preventDefault();
+      const slideHeight = root.clientHeight || 1;
+      const current = Math.round(root.scrollTop / slideHeight);
+      const dir = e.key === "ArrowDown" ? 1 : -1;
+      const target = Math.max(0, Math.min(current + dir, items.length - 1));
+      const reduceMotion = window.matchMedia?.(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      root.scrollTo({
+        top: target * slideHeight,
+        behavior: reduceMotion ? "auto" : "smooth",
+      });
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [items.length]);
+
   // --- gated states -----------------------------------------------------------
   if (isLoadingInitial) return <Loading />;
   if (error && items.length === 0) {

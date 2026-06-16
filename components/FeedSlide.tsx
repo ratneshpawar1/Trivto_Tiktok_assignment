@@ -11,8 +11,23 @@ interface Props {
   onToggleLike: () => void;
 }
 
+type Status = "loading" | "loaded" | "error";
+
 export function FeedSlide({ image, liked, onToggleLike }: Props) {
-  const [loaded, setLoaded] = useState(false);
+  const [status, setStatus] = useState<Status>("loading");
+  const [attempt, setAttempt] = useState(0);
+
+  // On retry, cache-bust the URL so the browser re-requests instead of serving
+  // the failed response from cache.
+  const src =
+    attempt === 0
+      ? image.srcUrl
+      : `${image.srcUrl}${image.srcUrl.includes("?") ? "&" : "?"}retry=${attempt}`;
+
+  const retry = () => {
+    setStatus("loading");
+    setAttempt((a) => a + 1);
+  };
 
   return (
     <li className={styles.slide} data-testid="feed-slide" data-id={image.id}>
@@ -27,16 +42,27 @@ export function FeedSlide({ image, liked, onToggleLike }: Props) {
         />
       )}
       {/* eslint-disable-next-line @next/next/no-img-element -- intentional: we
-          proxy/serve external image URLs directly and manage load/blur state
+          serve external image URLs directly and manage load/error/blur state
           ourselves rather than going through the next/image optimizer. */}
       <img
-        className={`${styles.image} ${loaded ? styles.loaded : ""}`}
-        src={image.srcUrl}
+        key={attempt}
+        className={`${styles.image} ${status === "loaded" ? styles.loaded : ""}`}
+        src={src}
         alt={image.alt}
         loading="lazy"
         decoding="async"
-        onLoad={() => setLoaded(true)}
+        onLoad={() => setStatus("loaded")}
+        onError={() => setStatus("error")}
       />
+
+      {status === "error" && (
+        <div className={styles.fallback} role="alert">
+          <p className={styles.fallbackTitle}>Couldn&apos;t load image</p>
+          <button type="button" className={styles.fallbackRetry} onClick={retry}>
+            Retry
+          </button>
+        </div>
+      )}
 
       <div className={styles.scrim} aria-hidden="true" />
 

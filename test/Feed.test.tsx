@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Feed } from "../components/Feed";
 import type { FeedImage } from "../types";
@@ -191,5 +191,38 @@ describe("Feed", () => {
       expect(screen.getAllByTestId("feed-slide")).toHaveLength(2),
     );
     expect(fetchMock).toHaveBeenCalledWith("/api/feed?page=2");
+  });
+
+  it("navigates to the next slide on ArrowDown", async () => {
+    vi.stubGlobal(
+      "fetch",
+      routeFetch({
+        feed: () => feedRes([img("1"), img("2"), img("3")], null),
+      }),
+    );
+    render(<Feed />);
+    await waitFor(() =>
+      expect(screen.getAllByTestId("feed-slide")).toHaveLength(3),
+    );
+
+    const container = screen.getByTestId("feed");
+    Object.defineProperty(container, "clientHeight", {
+      value: 800,
+      configurable: true,
+    });
+    Object.defineProperty(container, "scrollTop", {
+      value: 0,
+      writable: true,
+      configurable: true,
+    });
+    const scrollTo = vi.fn();
+    // jsdom doesn't implement scrollTo.
+    (container as unknown as { scrollTo: typeof scrollTo }).scrollTo = scrollTo;
+
+    fireEvent.keyDown(window, { key: "ArrowDown" });
+
+    expect(scrollTo).toHaveBeenCalledWith(
+      expect.objectContaining({ top: 800 }),
+    );
   });
 });
